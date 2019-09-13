@@ -1,5 +1,6 @@
 #include <Nextion.h>
 #include <SoftwareSerial.h>
+#define rcSerial Serial1
 
 const int tempSensor = A0;
 float airT = 0;
@@ -22,9 +23,12 @@ NexText tTempC = NexText (1, 5, "tTempC");
 void setup()
 {
   Serial.begin(9600);
+  rcSerial.begin(9600);
+
   Serial.println("Teensy Read");
   nexInit();
   Serial.println("Display Ready");
+
 }
 
 
@@ -36,7 +40,7 @@ void loop()
     parseData();
     newData = false;
   }
-  tempRead();
+  //tempRead();
 }
 
 
@@ -59,9 +63,9 @@ void recvWithStartEndMarkers()
   char endMarker = '>';
   char rc;
 
-  while (Serial.available() > 0 && newData == false)
+  while (rcSerial.available() > 0 && newData == false)
   {
-    rc = Serial.read();
+    rc = rcSerial.read();
 
     if (recvInProgress = true) {
       if (rc != endMarker){
