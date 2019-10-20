@@ -47,19 +47,35 @@ class pyCAN:
 			msb = msg.data[0]
 			lsb = msg.data[1]
 			tmp = tire_temp(dec_converter(msb, lsb))
-			switcher = {
-			1204: tmp,
-			1205: tmp,
-			1206: tmp,
-			1207: tmp
-			}
+			
+			# Switcher use is not optimal for data output 
+			# can set a list from case
+			# values drift when bus drops
+			# switcher = {
+			# 1204: self.out[0] = tmp,
+			# 1205: self.out[1] = tmp,
+			# 1206: self.out[2] = tmp,
+			# 1207: self.out[3] = tmp
+			# }
 
 			#Switcher for tire temperature (1200, 1216)
 			# switcher = {}
 			# for i in range(1204, 1207 + 1):
 			#  	switcher[i] = tmp
-			out = {canid: switcher.get(canid, "nothing")}
-			return out
+			# out = {canid: switcher.get(canid, "nothing")}
+
+			# Will look ugly but works
+			if canid ==1204:
+				self.out[0] = ["1204:", tmp]
+			elif canid ==1205:
+				self.out[1] = ["1205:", tmp]
+			elif canid ==1206:
+				self.out[2] = ["1206:", tmp]
+			elif canid ==1207:
+				self.out[3] = ["1207:", tmp]
+
+			
+			return self.out
 			
 
 		def ecu_arbitation_filter(canid):
@@ -68,13 +84,11 @@ class pyCAN:
 		def buffered_reader(msg):
 			pass
 
-
-		while not rospy.is_shutdown():
+		def something_something():
 
 			for i in range (0, 4):
-				msg = self.reader.get_message()
 				x =arbitation_filter(msg.arbitration_id)
-				self.out[i] = x
+				
 			#print self.out
 
 			#rospy.loginfo(self.out)
@@ -85,7 +99,10 @@ class pyCAN:
 			#print(self.out[0])
 			#rate.sleep()
 			
+		while not rospy.is_shutdown():
+			msg = self.reader.get_message()
 
+			something_something()
 
 
 
