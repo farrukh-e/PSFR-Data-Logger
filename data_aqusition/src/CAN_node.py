@@ -96,14 +96,16 @@ class pyCAN:
 			#can_pub.publish(str(self.out[0][1204]))
 		
 		
-			print(self.out)
+			#print(self.out)
 			#print(self.out[0])
 			#rate.sleep()
 			
 		while not rospy.is_shutdown():
 			msg = self.reader.get_message()
-
-			something_something()
+			if msg is not None:
+				print msg
+				#something_something()
+				#print self.out
 
 
 
