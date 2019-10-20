@@ -2,6 +2,7 @@
 
 import rospy 
 from std_msgs.msg import Int16
+from std_msgs.msg import String
 
 import can 
 import time 
@@ -12,33 +13,30 @@ class pyCAN:
 	
 	def __init__(self):
 		
-		self.channel = 'vcan0'
+		self.channel = 'can0'
 		self.bustype = 'socketcan'
 		self.bitrate = 1000000 
+		self.out = [0,0,0,0]
 
 		self.bus = can.interface.Bus(channel = self.channel, bustype = self.bustype, bitrate = self.bitrate)
 		self.buffer = can.BufferedReader()
-		self.out = [0,0,0,0]
-		rospy.init_node('driver', anonymous=True)
-		#can_pub =  rospy.Publisher("can_bus", Int16, queue_size = 100)
-		#Decimal to hex converter
 		
-		while True:
+		rospy.init_node('driver', anonymous=True)
+		rate = rospy.Rate(20)
+		can_pub =  rospy.Publisher("can_bus", String, queue_size = 100)
 
-			msg = self.bus.recv()
-			for i in range (0, 4):
-				x =arbitation_filter(msg.arbitration_id)
-				self.out[i] = x
-				print self.out
-			print "1"
-				
+		
+
+
 		def dec_converter(msb,lsb):
 			dec = 256 * msb + (lsb/16) * 16 + lsb//16 
 			return dec
 
+
 		def tire_temp(tTemp):
 			tTemp = tTemp/10 - 100
 			return tTemp
+
 
 		def arbitation_filter(canid):
 			#take first readings per channel and assign them accordingly
@@ -53,19 +51,32 @@ class pyCAN:
 
 			#Switcher for tire temperature (1200, 1216)
 			switcher = {}
-			for i in range(1204, 1207):
-				switcher[i] = tire_temp(dec_converter(msb, lsb))
-			
+			for i in range(1204, 1207 + 1):
+			 	switcher[i] = tire_temp(dec_converter(msb, lsb))
 			out = {canid: switcher.get(canid, "nothing")}
 			return out
 			
+
 		def ecu_arbitation_filter(canid):
 			pass
 
 
+		while not rospy.is_shutdown():
+
+			msg = self.bus.recv()
+			for i in range (0, 4):
+				x =arbitation_filter(msg.arbitration_id)
+				self.out[i] = x
+			print self.out
+			
+			rospy.loginfo(self.out)
+			pub.publsih(self.out)
+			rate.sleep()
+			
 
 
-			#time.sleep(.05)
+
+
 
 
 
@@ -85,7 +96,6 @@ if __name__ == '__main__':
 
 	except rospy.ROSInterruptException:
 		pass
-
 
 
 
