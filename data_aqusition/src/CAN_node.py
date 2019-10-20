@@ -12,7 +12,7 @@ class pyCAN:
 	
 	def __init__(self):
 		
-		self.channel = 'can0'
+		self.channel = 'vcan0'
 		self.bustype = 'socketcan'
 		self.bitrate = 1000000 
 
@@ -23,6 +23,15 @@ class pyCAN:
 		#can_pub =  rospy.Publisher("can_bus", Int16, queue_size = 100)
 		#Decimal to hex converter
 		
+		while True:
+
+			msg = self.bus.recv()
+			for i in range (0, 4):
+				x =arbitation_filter(msg.arbitration_id)
+				self.out[i] = x
+				print self.out
+			print "1"
+				
 		def dec_converter(msb,lsb):
 			dec = 256 * msb + (lsb/16) * 16 + lsb//16 
 			return dec
@@ -44,23 +53,14 @@ class pyCAN:
 
 			#Switcher for tire temperature (1200, 1216)
 			switcher = {}
-			for i in range(1204, 1207 + 1):
-			 	switcher[i] = tire_temp(dec_converter(msb, lsb))
+			for i in range(1204, 1207):
+				switcher[i] = tire_temp(dec_converter(msb, lsb))
 			
 			out = {canid: switcher.get(canid, "nothing")}
 			return out
 			
 		def ecu_arbitation_filter(canid):
 			pass
-
-		while True:
-
-			msg = self.bus.recv()
-			for i in range (0, 4):
-				x =arbitation_filter(msg.arbitration_id)
-				self.out[i] = x
-			print self.out
-			
 
 
 
