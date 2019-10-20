@@ -1,3 +1,4 @@
+ 
 #!/usr/bin/env python
 
 import rospy 
@@ -42,17 +43,18 @@ class pyCAN:
 			#take first readings per channel and assign them accordingly
 			msb = msg.data[0]
 			lsb = msg.data[1]
-			# switcher = {
-			# 1204: tire_temp(dec_converter(msb, lsb)),
-			# 1205: tire_temp(dec_converter(msb, lsb)),
-			# 1206: tire_temp(dec_converter(msb, lsb)),
-			# 1207: tire_temp(dec_converter(msb, lsb))
-			# }
+			x = tire_temp(dec_converter(msb, lsb))
+			switcher = {
+			1204: tire_temp(dec_converter(msb, lsb)),
+			1205: tire_temp(dec_converter(msb, lsb)),
+			1206: tire_temp(dec_converter(msb, lsb)),
+			1207: tire_temp(dec_converter(msb, lsb))
+			}
 
 			#Switcher for tire temperature (1200, 1216)
-			switcher = {}
-			for i in range(1204, 1207 + 1):
-			 	switcher[i] = tire_temp(dec_converter(msb, lsb))
+			# switcher = {}
+			# for i in range(1204, 1207 + 1):
+			#  	switcher[i] = x
 			out = {canid: switcher.get(canid, "nothing")}
 			return out
 			
@@ -63,14 +65,18 @@ class pyCAN:
 
 		while not rospy.is_shutdown():
 
-			msg = self.bus.recv()
 			for i in range (0, 4):
+				msg = self.bus.recv()
 				x =arbitation_filter(msg.arbitration_id)
 				self.out[i] = x
-			print self.out
-			
-			rospy.loginfo(self.out)
-			pub.publsih(self.out)
+			#print self.out
+
+			#rospy.loginfo(self.out)
+			#can_pub.publish(str(self.out[0][1204]))
+			y =	self.buffer(msg)
+			print y
+			print(self.out)
+			#print(self.out[0])
 			rate.sleep()
 			
 
@@ -96,6 +102,4 @@ if __name__ == '__main__':
 
 	except rospy.ROSInterruptException:
 		pass
-
-
 
