@@ -20,8 +20,11 @@ class pyCAN:
 		self.out = [0,0,0,0]
 
 		self.bus = can.interface.Bus(channel = self.channel, bustype = self.bustype, bitrate = self.bitrate)
-		self.buffer = can.BufferedReader()
-		
+		#self.buffer = queue.Queue(0)
+		self.reader = can.BufferedReader()
+		self.listeners = [self.reader]
+		self.notifier = can.Notifier(self.bus, self.listeners)
+
 		rospy.init_node('driver', anonymous=True)
 		rate = rospy.Rate(20)
 		can_pub =  rospy.Publisher("can_bus", String, queue_size = 100)
@@ -43,18 +46,18 @@ class pyCAN:
 			#take first readings per channel and assign them accordingly
 			msb = msg.data[0]
 			lsb = msg.data[1]
-			x = tire_temp(dec_converter(msb, lsb))
+			tmp = tire_temp(dec_converter(msb, lsb))
 			switcher = {
-			1204: tire_temp(dec_converter(msb, lsb)),
-			1205: tire_temp(dec_converter(msb, lsb)),
-			1206: tire_temp(dec_converter(msb, lsb)),
-			1207: tire_temp(dec_converter(msb, lsb))
+			1204: tmp,
+			1205: tmp,
+			1206: tmp,
+			1207: tmp
 			}
 
 			#Switcher for tire temperature (1200, 1216)
 			# switcher = {}
 			# for i in range(1204, 1207 + 1):
-			#  	switcher[i] = x
+			#  	switcher[i] = tmp
 			out = {canid: switcher.get(canid, "nothing")}
 			return out
 			
@@ -62,22 +65,25 @@ class pyCAN:
 		def ecu_arbitation_filter(canid):
 			pass
 
+		def buffered_reader(msg):
+			pass
+
 
 		while not rospy.is_shutdown():
 
 			for i in range (0, 4):
-				msg = self.bus.recv()
+				msg = self.reader.get_message()
 				x =arbitation_filter(msg.arbitration_id)
 				self.out[i] = x
 			#print self.out
 
 			#rospy.loginfo(self.out)
 			#can_pub.publish(str(self.out[0][1204]))
-			y =	self.buffer(msg)
-			print y
+		
+		
 			print(self.out)
 			#print(self.out[0])
-			rate.sleep()
+			#rate.sleep()
 			
 
 
