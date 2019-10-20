@@ -65,16 +65,17 @@ class pyCAN:
 			# out = {canid: switcher.get(canid, "nothing")}
 
 			# Will look ugly but works
-			if canid ==1204:
+			# Look for elegant way to create bunch of function in a loop
+			#list of list is easier to output in ros than dictionery
+			if canid ==   1204:
 				self.out[0] = ["1204:", tmp]
-			elif canid ==1205:
+			elif canid == 1205:
 				self.out[1] = ["1205:", tmp]
-			elif canid ==1206:
+			elif canid == 1206:
 				self.out[2] = ["1206:", tmp]
-			elif canid ==1207:
+			elif canid == 1207:
 				self.out[3] = ["1207:", tmp]
 
-			
 			return self.out
 			
 
