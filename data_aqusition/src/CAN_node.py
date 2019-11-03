@@ -6,6 +6,8 @@
 import rospy 
 from std_msgs.msg import Int16
 from std_msgs.msg import String
+from data_aqusition import tire_t
+from data_aqusition import ecu_msg
 
 import can 
 import time 
@@ -13,6 +15,10 @@ import time
 
 class pyCAN:
 	
+	tire_id = [i for i in range (1200, 1212 + 1)]
+	ecu_arbitaions = [218099784, 218100296, 218100552, 218100808, 218101064, 218102856]
+
+
 	def __init__(self):
 		
 		self.channel = 'can0'
@@ -26,12 +32,13 @@ class pyCAN:
 		#self.logger = can.Logger('logfile.asc')
 		self.listeners = [self.reader] #, self.logger]
 		self.notifier = can.Notifier(self.bus, self.listeners)
-		self.ecu_arbitaions = [218099784, 218100296, 218100552, 218100808, 218101064, 218102856]
 
-		rospy.init_node('driver', anonymous=True)
+		rospy.init_node('can_driver', anonymous=True)
 		rate = rospy.Rate(20)
-		can_pub =  rospy.Publisher("can_bus", String, queue_size = 100)
-
+		can_pub = rospy.Publisher("can_data", tire_t , queue_size = 100)
+		ecu_pub = rospy.Publisher('ecu_data', ecu_msg, queue_size = 100)
+		tire_msg = tire_t()
+		ecu_msg = ecu_msg()
 
 
 		def dec_converter(msb,lsb):
@@ -79,12 +86,11 @@ class pyCAN:
 			# elif canid == 1207:
 			# 	self.out[3] = ["1207:", tmp]
 
-			tire_id = [i for i in range (1200, 1212 + 1)]
 			for i in tire_id:
-				if i == tire_id[i - 1200]:
+				if i == canid:
 					self.tireT_out[i - 1200] = [str(i) + ":", tmp]
 			
-			return self.tireT_out
+			print self.tireT_out
 			
 
 		def ecu_arbitation_filter(canid):
@@ -103,18 +109,20 @@ class pyCAN:
 				self.ecu_out[2] = ["analog5_8:", analog5_8]
 			elif canid == 218100808:
 				freq1_4 = [ (dec_converter(msg.data[i + 1], msg.data[i]) * 0.02) for i in range(0,4)]
-				self.ecu_out[3] = ["freq5_8:", freq1_4]
+				self.ecu_out[3] = ["freq1_4:", freq1_4]
 			elif canid == 218099784:
 				RPM = dec_converter(msg.data[1], msg.data[0])
 				TPS = dec_converter(msg.data[3], msg.data[2])
 				self.ecu_out[4] = [RPM, TPS * 0.1]
 			
+
+
 			# for i in ecu_arbitaions:
 			# 	if canid = ecu_arbitaions[i]:
 		
 			#rospy.loginfo(self.out)
 			#can_pub.publish(str(self.out[0][1204]))
-			print self.ecu_out
+			#print self.ecu_out
 
 
 		while not rospy.is_shutdown():
@@ -124,13 +132,8 @@ class pyCAN:
 				msg_id = msg.arbitration_id	
 				ecu_arbitation_filter(msg_id)
 				tireT_arbitation_filter(msg_id)
-
-
-	# def flush_buffer(self):
-
- #        msg = self.buffer.get_message()
- #        while (msg is not None):
- #            msg = self.buffer.get_message()
+			
+			rate.sleep()
 
 if __name__ == '__main__':
 	try:
