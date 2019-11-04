@@ -1,4 +1,6 @@
-string temp_loc
 
-uint8 avr_t
-uint8[] chan_t #variable sized array of uint	
+uint8 avr_t_1200 
+uint8 avr_t_1204 
+uint8 avr_t_1208 
+uint8 avr_t_1212 
+#uint8[] chan_t #variable sized array of uint	

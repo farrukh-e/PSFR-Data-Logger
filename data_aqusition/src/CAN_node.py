@@ -6,8 +6,8 @@
 import rospy 
 from std_msgs.msg import Int16
 from std_msgs.msg import String
-from data_aqusition import tire_t
-from data_aqusition import ecu_msg
+from data_aqusition.msg import tire_t
+from data_aqusition.msg import ecu_msg
 
 import can 
 import time 
@@ -15,15 +15,15 @@ import time
 
 class pyCAN:
 	
-	tire_id = [i for i in range (1200, 1212 + 1)]
-	ecu_arbitaions = [218099784, 218100296, 218100552, 218100808, 218101064, 218102856]
 
-
+	
 	def __init__(self):
 		
 		self.channel = 'can0'
 		self.bustype = 'socketcan'
 		self.bitrate = 1000000 
+		self.tire_id = [i for i in range (1200, 1212 + 1)]
+		self.avr_t = [0,0,0,0]
 		self.tireT_out = [0 for i in range(0,16)]
 		self.ecu_out = [0 for i in range(0,16)]
 
@@ -33,12 +33,16 @@ class pyCAN:
 		self.listeners = [self.reader] #, self.logger]
 		self.notifier = can.Notifier(self.bus, self.listeners)
 
+
 		rospy.init_node('can_driver', anonymous=True)
-		rate = rospy.Rate(20)
+		rate = rospy.Rate(100)
+		ecu_arbitaions = [218099784, 218100296, 218100552, 218100808, 218101064, 218102856]
+		self.tire_msg = tire_t()
+		self.ecu_msg = ecu_msg()
+
 		can_pub = rospy.Publisher("can_data", tire_t , queue_size = 100)
 		ecu_pub = rospy.Publisher('ecu_data', ecu_msg, queue_size = 100)
-		tire_msg = tire_t()
-		ecu_msg = ecu_msg()
+
 
 
 		def dec_converter(msb,lsb):
@@ -86,12 +90,22 @@ class pyCAN:
 			# elif canid == 1207:
 			# 	self.out[3] = ["1207:", tmp]
 
-			for i in tire_id:
+			for i in self.tire_id:
 				if i == canid:
-					self.tireT_out[i - 1200] = [str(i) + ":", tmp]
-			
+					#self.tireT_out[i - 1200] = [str(i) + ":", tmp]
+					self.tireT_out[i - 1200] = tmp
 			print self.tireT_out
-			
+
+			# for i in range(0,13):
+			# 	if i%4 == 0 or i == 0:
+			# 		self.avr_t[i] = (sum(self.tireT_out[i:(i+4)])/4)
+
+			self.tire_msg.avr_t_1200 = sum(self.tireT_out[0:4])/4
+			self.tire_msg.avr_t_1204 = sum(self.tireT_out[4:8])/4
+			self.tire_msg.avr_t_1208 = sum(self.tireT_out[8:12])/4
+			self.tire_msg.avr_t_1212 = sum(self.tireT_out[12:17])/4
+
+
 
 		def ecu_arbitation_filter(canid):
 			#ECU lsb to msb, [0],[1]
@@ -100,6 +114,8 @@ class pyCAN:
 				Voltage = dec_converter(msg.data[1], msg.data[0])
 				AirT = dec_converter(msg.data[3], msg.data[2])
 				self.ecu_out[0] = [Voltage*0.01, AirT*0.1]
+				self.ecu_msg.Battery_Voltage = Voltage
+				self.ecu_msg.ait_T = AirT
 			# Get analog inputs
 			elif canid == 218100296:
 				analog1_4 = [ (dec_converter(msg.data[i + 1], msg.data[i]) * 0.001) for i in range(0,4)]
@@ -124,16 +140,18 @@ class pyCAN:
 			#can_pub.publish(str(self.out[0][1204]))
 			#print self.ecu_out
 
-
+		n_steps = 0
 		while not rospy.is_shutdown():
-			
+			n_steps += 1
 			msg = self.reader.get_message()
 			if msg is not None:
 				msg_id = msg.arbitration_id	
 				ecu_arbitation_filter(msg_id)
 				tireT_arbitation_filter(msg_id)
-			
-			rate.sleep()
+			if (n_steps + 1) % 100 == 0:
+				ecu_pub.publish(self.ecu_msg)
+				can_pub.publish(self.tire_msg) 
+			#rate.sleep()
 
 if __name__ == '__main__':
 	try:
