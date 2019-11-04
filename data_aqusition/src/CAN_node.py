@@ -4,8 +4,7 @@
 #!/usr/bin/env python
 
 import rospy 
-from std_msgs.msg import Int16
-from std_msgs.msg import String
+
 from data_aqusition.msg import tire_t
 from data_aqusition.msg import ecu_msg
 
@@ -15,34 +14,35 @@ import time
 
 class pyCAN:
 	
-
 	
 	def __init__(self):
 		
 		self.channel = 'can0'
 		self.bustype = 'socketcan'
 		self.bitrate = 1000000 
-		self.tire_id = [i for i in range (1200, 1212 + 1)]
-		self.avr_t = [0,0,0,0]
-		self.tireT_out = [0 for i in range(0,16)]
-		self.ecu_out = [0 for i in range(0,16)]
-
+		
 		self.bus = can.interface.Bus(channel = self.channel, bustype = self.bustype, bitrate = self.bitrate)
 		self.reader = can.BufferedReader()
 		#self.logger = can.Logger('logfile.asc')
 		self.listeners = [self.reader] #, self.logger]
 		self.notifier = can.Notifier(self.bus, self.listeners)
 
-
-		rospy.init_node('can_driver', anonymous=True)
-		rate = rospy.Rate(100)
-		ecu_arbitaions = [218099784, 218100296, 218100552, 218100808, 218101064, 218102856]
 		self.tire_msg = tire_t()
 		self.ecu_msg = ecu_msg()
 
+
+		rospy.init_node('can_driver', anonymous=True)
 		can_pub = rospy.Publisher("can_data", tire_t , queue_size = 100)
 		ecu_pub = rospy.Publisher('ecu_data', ecu_msg, queue_size = 100)
+		rate = rospy.Rate(100)
 
+		self.tire_id = [i for i in range (1200, 1212 + 1)]
+		self.avr_t = [0,0,0,0]
+		self.tireT_out = [0 for i in range(0,16)]
+		self.ecu_out = [0 for i in range(0,16)]
+
+		ecu_arbitaions = [218099784, 218100296, 218100552, 218100808, 218101064, 218102856]
+		n_steps = 0
 
 
 		def dec_converter(msb,lsb):
@@ -96,15 +96,10 @@ class pyCAN:
 					self.tireT_out[i - 1200] = tmp
 			print self.tireT_out
 
-			# for i in range(0,13):
-			# 	if i%4 == 0 or i == 0:
-			# 		self.avr_t[i] = (sum(self.tireT_out[i:(i+4)])/4)
-
 			self.tire_msg.avr_t_1200 = sum(self.tireT_out[0:4])/4
-			self.tire_msg.avr_t_1204 = sum(self.tireT_out[4:8])/4
-			self.tire_msg.avr_t_1208 = sum(self.tireT_out[8:12])/4
-			self.tire_msg.avr_t_1212 = sum(self.tireT_out[12:17])/4
-
+			self.tire_msg.avr_t_1204 = sum(self.tireT_out[5:8])/4
+			self.tire_msg.avr_t_1208 = sum(self.tireT_out[9:12])/4
+			self.tire_msg.avr_t_1212 = sum(self.tireT_out[13:16])/4
 
 
 		def ecu_arbitation_filter(canid):
@@ -132,7 +127,6 @@ class pyCAN:
 				self.ecu_out[4] = [RPM, TPS * 0.1]
 			
 
-
 			# for i in ecu_arbitaions:
 			# 	if canid = ecu_arbitaions[i]:
 		
@@ -140,7 +134,6 @@ class pyCAN:
 			#can_pub.publish(str(self.out[0][1204]))
 			#print self.ecu_out
 
-		n_steps = 0
 		while not rospy.is_shutdown():
 			n_steps += 1
 			msg = self.reader.get_message()
@@ -148,6 +141,7 @@ class pyCAN:
 				msg_id = msg.arbitration_id	
 				ecu_arbitation_filter(msg_id)
 				tireT_arbitation_filter(msg_id)
+
 			if (n_steps + 1) % 100 == 0:
 				ecu_pub.publish(self.ecu_msg)
 				can_pub.publish(self.tire_msg) 
