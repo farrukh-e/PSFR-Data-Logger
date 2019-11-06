@@ -16,7 +16,7 @@ class pyCAN:
 	
 	
 	def __init__(self):
-		
+		# Can bus properties for can1
 		self.channel = 'can0'
 		self.bustype = 'socketcan'
 		self.bitrate = 1000000 
@@ -26,16 +26,16 @@ class pyCAN:
 		#self.logger = can.Logger('logfile.asc')
 		self.listeners = [self.reader] #, self.logger]
 		self.notifier = can.Notifier(self.bus, self.listeners)
-
+		# Initilize custom messages 
 		self.tire_msg = tire_t()
 		self.ecu_msg = ecu_msg()
 
-
+		# Initizile ros publsihers and set rate of the main loop
 		rospy.init_node('can_driver', anonymous=True)
 		can_pub = rospy.Publisher("can_data", tire_t , queue_size = 100)
 		ecu_pub = rospy.Publisher('ecu_data', ecu_msg, queue_size = 100)
 		rate = rospy.Rate(100)
-
+		# Initilize fixed value list for data
 		self.tire_id = [i for i in range (1200, 1212 + 1)]
 		self.avr_t = [0,0,0,0]
 		self.tireT_out = [0 for i in range(0,16)]
@@ -95,7 +95,7 @@ class pyCAN:
 					#self.tireT_out[i - 1200] = [str(i) + ":", tmp]
 					self.tireT_out[i - 1200] = tmp
 			print self.tireT_out
-
+			# Assign average temperature per sensor
 			self.tire_msg.avr_t_1200 = sum(self.tireT_out[0:4])/4
 			self.tire_msg.avr_t_1204 = sum(self.tireT_out[5:8])/4
 			self.tire_msg.avr_t_1208 = sum(self.tireT_out[9:12])/4
@@ -115,18 +115,22 @@ class pyCAN:
 			elif canid == 218100296:
 				analog1_4 = [ (dec_converter(msg.data[i + 1], msg.data[i]) * 0.001) for i in range(0,4)]
 				self.ecu_out[1] = ["analog1_4:", analog1_4]
+				self.ecu_msg.analog1_4 = analog1_4
 			elif canid == 218100552:
 				analog5_8 = [ (dec_converter(msg.data[i + 1], msg.data[i]) * 0.001) for i in range(0,4)]
 				self.ecu_out[2] = ["analog5_8:", analog5_8]
+				self.ecu_msg.analog5_8 = analog5_8
 			elif canid == 218100808:
 				freq1_4 = [ (dec_converter(msg.data[i + 1], msg.data[i]) * 0.02) for i in range(0,4)]
 				self.ecu_out[3] = ["freq1_4:", freq1_4]
+				self.ecu_msg.freq1_4 = freq1_4
 			elif canid == 218099784:
 				RPM = dec_converter(msg.data[1], msg.data[0])
 				TPS = dec_converter(msg.data[3], msg.data[2])
 				self.ecu_out[4] = [RPM, TPS * 0.1]
+				self.ecu_msg.RPM = RPM
+				self.ecu_msg.TPS = TPS
 			
-
 			# for i in ecu_arbitaions:
 			# 	if canid = ecu_arbitaions[i]:
 		
@@ -141,7 +145,7 @@ class pyCAN:
 				msg_id = msg.arbitration_id	
 				ecu_arbitation_filter(msg_id)
 				tireT_arbitation_filter(msg_id)
-
+			# Limit message publish rate 
 			if (n_steps + 1) % 100 == 0:
 				ecu_pub.publish(self.ecu_msg)
 				can_pub.publish(self.tire_msg) 
@@ -151,7 +155,7 @@ if __name__ == '__main__':
 	try:
 
 		C = pyCAN()
-		rospy.spin()
+		#rospy.spin() Only needed with subsribers 
 
 	except rospy.ROSInterruptException:
 		pass
