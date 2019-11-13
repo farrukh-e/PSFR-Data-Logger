@@ -1,0 +1,29 @@
+
+Task to distribute :
+	
+	1) Convert CAD model of the car to yaml file for rviz vizualization
+	https://github.com/AMZ-Driverless/fssim/tree/master/fssim_description/cars/gotthard
+	2) Make an electric powertrain model of the car in matlab to size the battery pack
+	https://www.mathworks.com/academia/student-competitions/formula-student-germany.html
+	3) Display still needs to be programmed (Python 2.7 or C++)
+	to work with nvidia jetson
+	https://www.itead.cc/blog/how-to-use-nextion-to-work-with-raspberry-pi
+	Do it using ubuntu instead of raspbian
+	http://acoptex.com/project/7210/raspberry-basics-project-31a-raspberry-pi-zero-w-board-and-nextion-hmi-display-at-acoptexcom/#sthash.X3dg8NRi.dpbs
+	4) electronics enclosure and mounting 
+
+	4) Look into lqr and mpc controller difference and implemetation?
+
+Tasks to complete:
+	easy stuff
+	1) wire and configure imu 
+	2) add imu scipt into data aqusition code (use Ros imu message)
+	3) set up the second can bus
+	
+	4) get ode equations for the car dynamics
+		Tire model
+		Weight transfer
+		general dynamics
+		aero effect related to velocity
+	5) set up odometry and state estimation node using equations from above
+	6) set up tc controller based on input from state estimation 
