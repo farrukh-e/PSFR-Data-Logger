@@ -5,7 +5,8 @@ Tested on Ubuntu 18 and ROS Melodic
 
 * use sudo ip link set can0 up type can bitrate 1000000 to start auxiliary can bus
 * use sudo ip link set can1 up type can bitrate 500000 to start ecu bas
-Check python can library for examples
+
+_Check python can library for examples_
 
 # Current issues:
 - [ ] Node refuses to start if usb2can is unplugged
