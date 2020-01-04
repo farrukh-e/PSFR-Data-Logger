@@ -16,16 +16,21 @@ class pyCAN:
 	
 	
 	def __init__(self):
-		# Can bus properties for can1
+		# Can bus properties for can0
 		self.channel = 'can0'
 		self.bustype = 'socketcan'
-		self.bitrate = 1000000 
+		self.bitrate = 1000000 # Adjust everything except ecu to this speed or reprogramm tire temperature sensors
+				
+		# Can bus properties for can1
+		self.channel = 'can1'
+		self.bitrate = 500000 # ECU can only run upto 500 kbits/sec, I don't remember it working with 1 Mbit/sec
 		
 		self.bus = can.interface.Bus(channel = self.channel, bustype = self.bustype, bitrate = self.bitrate)
 		self.reader = can.BufferedReader()
-		#self.logger = can.Logger('logfile.asc')
+		#self.logger = can.Logger('logfile.asc')   Can be used for logging without ros
 		self.listeners = [self.reader] #, self.logger]
 		self.notifier = can.Notifier(self.bus, self.listeners)
+		
 		# Initilize custom messages 
 		self.tire_msg = tire_t()
 		self.ecu_msg = ecu_msg()
@@ -35,6 +40,7 @@ class pyCAN:
 		can_pub = rospy.Publisher("can_data", tire_t , queue_size = 100)
 		ecu_pub = rospy.Publisher('ecu_data', ecu_msg, queue_size = 100)
 		rate = rospy.Rate(100)
+		
 		# Initilize fixed value list for data
 		self.tire_id = [i for i in range (1200, 1212 + 1)]
 		self.avr_t = [0,0,0,0]
@@ -120,6 +126,7 @@ class pyCAN:
 				analog5_8 = [ (dec_converter(msg.data[i + 1], msg.data[i]) * 0.001) for i in range(0,4)]
 				self.ecu_out[2] = ["analog5_8:", analog5_8]
 				self.ecu_msg.analog5_8 = analog5_8
+			#Get wheel speed data
 			elif canid == 218100808:
 				freq1_4 = [ (dec_converter(msg.data[i + 1], msg.data[i]) * 0.02) for i in range(0,4)]
 				self.ecu_out[3] = ["freq1_4:", freq1_4]
